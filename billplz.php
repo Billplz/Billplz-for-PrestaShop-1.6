@@ -225,7 +225,7 @@ class billplz extends PaymentModule
 				$url = $arr['url'];
 				break;
 			}
-			else {
+			else if ($i==0){
 				$url = "#";
 				unset($billplz_data['mobile']);
 			}
