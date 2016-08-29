@@ -38,6 +38,8 @@ class billplz extends PaymentModule
 	$this->author = 'Wanzul-Hosting.com';
 	$this->need_instance = 0;
 	$this->ps_versions_compliancy = array('min' => '1.5', 'max' => '1.6');
+	
+	$this->module_key = 'f252742cc4dfbf2de6d1e9fa10613acc';
 
 	$this->currencies = true;
 	$this->currencies_mode = 'checkbox';
