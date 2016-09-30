@@ -63,9 +63,7 @@ class billplzBackEndPostUrlModuleFrontController extends ModuleFrontController {
 
                 $currency = $this->context->currency;
                 $total = (float) $cart->getOrderTotal(true, Cart::BOTH);
-if (!Order::getOrderByCartId($arr['reference_1'])) {
                 $this->module->validateOrder($cart->id, Configuration::get('PS_OS_PAYMENT'), $total, $this->module->displayName, NULL, null, (int) $currency->id, false, $customer->secure_key);
-}
             else:
             //$this->_logToFile(_LOG_DIR_.'/backendpost.log', 'Sorry, processing your order is unsuccessful due to an error. Please contact our support team.');
             endif;
