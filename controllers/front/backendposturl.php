@@ -51,6 +51,7 @@ class billplzBackEndPostUrlModuleFrontController extends ModuleFrontController {
         $arr = Tools::jsonDecode($return, true);
         //RE CURL
         // If Response page signature match
+        header("Status: 200");
         if (Tools::getValue('recid') == $arr['reference_1']) :
 
             // Check if the order is successful
