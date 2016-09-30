@@ -198,9 +198,9 @@ class billplz extends PaymentModule {
             'reference_1_label' => "ID",
             'reference_1' => $this->context->cart->id,
             'description' => $this->getProductDesc($params),
-            'redirect_url' => isset($_SERVER['HTTPS']) ? ($_SERVER['HTTPS'] == "on" ? 'https://' : 'http://') : 'http://' . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . 'index.php?fc=module&module=billplz&controller=receive&scvalidate=' . $this->context->cart->id,
+            'redirect_url' => (isset($_SERVER['HTTPS']) ? ($_SERVER['HTTPS'] == "on" ? 'https://' : 'http://') : 'http://') . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . 'index.php?fc=module&module=billplz&controller=receive&scvalidate=' . $this->context->cart->id,
             //'redirect_url' => $this->context->link->getModuleLink('billplz', 'receive') . '?&scvalidate='. $this->context->cart->id,
-            'callback_url' => isset($_SERVER['HTTPS']) ? ($_SERVER['HTTPS'] == "on" ? 'https://' : 'http://') : 'http://' . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . 'index.php?fc=module&module=billplz&controller=backendposturl&recid=' . $this->context->cart->id,
+            'callback_url' => (isset($_SERVER['HTTPS']) ? ($_SERVER['HTTPS'] == "on" ? 'https://' : 'http://') : 'http://') . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . 'index.php?fc=module&module=billplz&controller=backendposturl&recid=' . $this->context->cart->id,
                 //$this->context->link->getModuleLink('billplz', 'backendposturl') . '?&recid='.$this->context->cart->id
         );
         //Billplz CURL
