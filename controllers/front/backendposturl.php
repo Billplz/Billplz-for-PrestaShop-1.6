@@ -51,7 +51,8 @@ class billplzBackEndPostUrlModuleFrontController extends ModuleFrontController {
         $arr = Tools::jsonDecode($return, true);
         //RE CURL
         // If Response page signature match
-        header("Status: 200");
+        echo "RECEIVEOK";
+        //header("Status: 200");
         if (Tools::getValue('recid') == $arr['reference_1']) :
 
             // Check if the order is successful
@@ -69,11 +70,11 @@ class billplzBackEndPostUrlModuleFrontController extends ModuleFrontController {
             //$this->_logToFile(_LOG_DIR_.'/backendpost.log', 'Sorry, processing your order is unsuccessful due to an error. Please contact our support team.');
             endif;
 
-            echo "RECEIVEOK";
+            //echo "RECEIVEOK";
             //$this->_logToFile(_LOG_DIR_.'/backendpost.log', 'RECEIVEOK');
             die();
         else:
-            echo "RECEIVEOK";
+            //echo "RECEIVEOK";
             //$this->_logToFile(_LOG_DIR_.'/backendpost.log', 'Generated signature and Requested signature mismatch.');
             die('Generated signature and Requested signature mismatch.');
         endif;
