@@ -60,7 +60,7 @@ class billplzReceiveModuleFrontController extends ModuleFrontController
 				// Check if the order is successful
 				if ( $arr['paid'] ) :
 
-					$cart = $this->context->cart;
+					$cart = new Cart($arr['reference_1']);
 					if ($cart->id_customer == 0 || $cart->id_address_delivery == 0 || $cart->id_address_invoice == 0 || !$this->module->active)
 						Tools::redirect('index.php?controller=order&step=1');
 
@@ -82,7 +82,7 @@ class billplzReceiveModuleFrontController extends ModuleFrontController
 					$currency = $this->context->currency;
 					$total = (float)$cart->getOrderTotal(true, Cart::BOTH);
 
-					$this->module->validateOrder($cart->id, Configuration::get('PS_OS_PAYMENT'), $total, $this->module->displayName, NULL, null, (int)$currency->id, false, $customer->secure_key);
+					//$this->module->validateOrder($cart->id, Configuration::get('PS_OS_PAYMENT'), $total, $this->module->displayName, NULL, null, (int)$currency->id, false, $customer->secure_key);
 					Tools::redirect('index.php?controller=history');				
 				elseif ( !$arr['paid'] ):
 					Tools::redirect('index.php?controller=order');
