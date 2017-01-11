@@ -20,10 +20,17 @@ Please open through Issues tab
 
 # Contact us
 Facebook: http://www.facebook.com/billplzplugin
-Email: support@wanzul-hosting.com
+Email: wan@wanzul-hosting.com
 
 # Donate
 www.wanzul.net/donate
 
-# Credit
-Special thanks to https://github.com/ruslyrossi47/iPay88-Prestashop/
+# Reference
+- https://github.com/ruslyrossi47/iPay88-Prestashop/
+- http://stackoverflow.com/questions/21482346/prestashop-payment-module-override
+- https://www.prestashop.com/forums/topic/5329-how-does-paymentprovider-validateorder-work/
+- http://doc.prestashop.com/display/PS15/Using+the+Context+Object
+- https://www.prestashop.com/forums/topic/311168-configurationphp/
+- http://www.w3schools.com/php/func_error_log.asp
+- http://developers.prestashop.com/module/50-PaymentModules/index.html
+- http://doc.prestashop.com/m/view-rendered-page.action?abstractPageId=23626851
