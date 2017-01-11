@@ -22,3 +22,6 @@ Email: support@wanzul-hosting.com
 
 # Donate
 www.wanzul.net/donate
+
+# Credit
+Special thanks to https://github.com/ruslyrossi47/iPay88-Prestashop/
