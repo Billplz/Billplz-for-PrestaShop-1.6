@@ -1,14 +1,37 @@
 <div class="row">
 	<div class="col-xs-12 col-md-6 col-lg-12">
         <p class="payment_module billplz">
-			<a title="Pay with Billplz" id="billplzSubmitBtn" href="{$action|escape:'htmlall':'UTF-8'}">
-				<span class="logo"><img alt="Pay with Billplz" src="{$logoBillplz|escape:'htmlall':'UTF-8'}"></span><span class="text">Pay with Billplz</span>
+			<a title="Pay with Billplz" id="BillplzSubmitBtn" href="#">
+				<span class="logo"><img alt="Pay with Billplz" src="{$logoBillplz}"></span><span class="text">Pay with Billplz</span>
 				<span class="text_support">Billplz supports the payment options as below:</span>
-				<span class="bank_card"><img alt="Pay with Billplz" src="{$logoURL|escape:'htmlall':'UTF-8'}"></span>
+				<span class="bank_card"><img alt="Pay with Billplz" src="{$logoURL}"></span>
 			</a>
 		</p>
     </div>
 </div>
+
+<form action="{$processurl}" method="post" name="ePayment" id="billplzform">
+	<input type="hidden" name="cartid" value="{$cartid}" />
+	<input type="hidden" name="amount" value="{$amount}" />
+	<input type="hidden" name="proddesc" value="{$proddesc}" />
+	<input type="hidden" name="name" value="{$name}" />
+	<input type="hidden" name="email" value="{$email}" />
+	<input type="hidden" name="mobile" value="{$mobile}" />
+	<input type="hidden" name="lang" value="UTF-8"/>
+        <input type="hidden" name="currency" value="{$currency}" />
+        <input type="hidden" name="signature" value="{$signature}" />
+	<input type="hidden" name="redirecturl" value="{$redirecturl}" />
+	<input type="hidden" name="callbackurl" value="{$callbackurl}" />
+</form>
+<script type="text/javascript">
+	{literal}
+		$('#BillplzSubmitBtn').on('click',function(e){
+			e.preventDefault();
+			$('#billplzform').submit();
+			return false;
+		});
+	{/literal}
+</script>	
 
 <style type="text/css">
 p.payment_module.billplz a {

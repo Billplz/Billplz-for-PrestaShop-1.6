@@ -1,6 +1,6 @@
 <?php
 
-/**
+/*
  * 2007-2015 PrestaShop
  *
  * NOTICE OF LICENSE
@@ -19,21 +19,23 @@
  * versions in the future. If you wish to customize PrestaShop for your
  * needs please refer to http://www.prestashop.com for more information.
  *
- * @author    Wan Zulkarnain <sales@wanzul-hosting.com>
- * @copyright 2007-2013 PrestaShop SA
- * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ * @copyright  2007-2013 PrestaShop SA
+ * @license    http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  * International Registered Trademark & Property of PrestaShop SA
+ *
+ * Author : wan@wanzul-hosting.com
  */
+
 if (!defined('_PS_VERSION_'))
     exit;
 
-class billplz extends PaymentModule {
+class Billplz extends PaymentModule {
 
     public function __construct() {
         $this->name = 'billplz';
         $this->tab = 'payments_gateways';
-        $this->version = '3.0.0';
-        $this->author = 'Wanzul-Hosting.com';
+        $this->version = '3.0';
+        $this->author = 'Wan Zulkarnain';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.5', 'max' => '1.6');
 
@@ -43,33 +45,59 @@ class billplz extends PaymentModule {
         parent::__construct();
 
         $this->displayName = $this->l('Billplz Payment Gateway');
-        $this->description = $this->l('Accept Payment Using Billplz');
+        $this->description = $this->l('Fair Payment Software. Accept FPX payment.');
 
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall?');
 
-        if (!Configuration::get('billplz'))
+        if (!Configuration::get('Billplz'))
             $this->warning = $this->l('No name provided');
     }
 
     public function install() {
+
+        // Create tables to store status data to prevent multiple callback
+        Db::getInstance()->execute('
+				CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'billplz_orders` (
+				`id` int(11) NOT NULL AUTO_INCREMENT,
+                                `order_id` int(11) NOT NULL,
+				`billplz_bills_id` varchar(255) NOT NULL,
+				PRIMARY KEY (`id`)
+                                ) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+				');
+
+        // Pre-set the default values
+        Configuration::updateValue('BILLPLZ_MODE', true);
+        Configuration::updateValue('BILLPLZ_IPNMODE', true);
+        Configuration::updateValue('BILLPLZ_BILLNOTIFY', false);
+
         return parent::install() &&
-                Configuration::updateValue('billplz', 'billplz MODULE') &&
+                Configuration::updateValue('Billplz', 'Billplz MODULE') &&
                 $this->registerHook('payment') &&
-                Configuration::updateValue('PS_OS_BILLPLZ', $this->_create_order_state('billplz Payment', null, 'orange'));
+                Configuration::updateValue('PS_OS_BILLPLZ', $this->_create_order_state('Billplz Payment', null, 'blue'));
     }
 
     public function uninstall() {
+        Db::getInstance()->execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'billplz_orders`;');
         return parent::uninstall() &&
-                Configuration::deleteByName('billplz');
+                Configuration::deleteByName('BILLPLZ_APIKEY') &&
+                Configuration::deleteByName('BILLPLZ_COLLECTIONID') &&
+                Configuration::deleteByName('BILLPLZ_MODE') &&
+                Configuration::deleteByName('BILLPLZ_IPNMODE') &&
+                Configuration::deleteByName('BILLPLZ_BILLNOTIFY');
     }
 
     public function getContent() {
         $output = null;
 
         if (Tools::isSubmit('submit' . $this->name)) {
-            Configuration::updateValue('MCODE', Tools::getValue('MCODE')); //API Key
-            Configuration::updateValue('MKEY', Tools::getValue('MKEY')); //Collection ID
-            Configuration::updateValue('PURL', Tools::getValue('PURL'));
+
+            // Update value bila tekan Submit dekat Back Office
+
+            Configuration::updateValue('BILLPLZ_APIKEY', Tools::getValue('BILLPLZ_APIKEY'));
+            Configuration::updateValue('BILLPLZ_COLLECTIONID', Tools::getValue('BILLPLZ_COLLECTIONID'));
+            Configuration::updateValue('BILLPLZ_MODE', Tools::getValue('BILLPLZ_MODE'));
+            Configuration::updateValue('BILLPLZ_IPNMODE', Tools::getValue('BILLPLZ_IPNMODE'));
+            Configuration::updateValue('BILLPLZ_BILLNOTIFY', Tools::getValue('BILLPLZ_BILLNOTIFY'));
             $output .= $this->displayConfirmation($this->l('Settings updated'));
         }
         return $output . $this->displayForm();
@@ -87,24 +115,71 @@ class billplz extends PaymentModule {
             'input' => array(
                 array(
                     'type' => 'text',
-                    'label' => $this->l('API Key'),
-                    'name' => 'MCODE',
+                    'label' => $this->l('API Secret Key'),
+                    'name' => 'BILLPLZ_APIKEY',
                     'size' => 20,
                     'required' => true
                 ),
                 array(
                     'type' => 'text',
                     'label' => $this->l('Collection ID'),
-                    'name' => 'MKEY',
+                    'name' => 'BILLPLZ_COLLECTIONID',
                     'size' => 20,
                     'required' => true
                 ),
                 array(
-                    'type' => 'text',
-                    'label' => $this->l('1 for Production or 2 for Staging'),
-                    'name' => 'PURL',
-                    'size' => 20,
-                    'required' => true
+                    'type' => 'switch',
+                    'label' => $this->l('Production Mode'),
+                    'name' => 'BILLPLZ_MODE',
+                    'is_bool' => true,
+                    'values' => array(
+                        array(
+                            'id' => 'Production',
+                            'value' => true,
+                            'label' => $this->l('Production')
+                        ),
+                        array(
+                            'id' => 'Staging',
+                            'value' => '0', // False
+                            'label' => $this->l('Staging')
+                        )
+                    )
+                ),
+                array(
+                    'type' => 'switch',
+                    'label' => $this->l('IPN Type (Yes: Callback, No: Return)'),
+                    'name' => 'BILLPLZ_IPNMODE',
+                    'is_bool' => true,
+                    'values' => array(
+                        array(
+                            'id' => 'callback',
+                            'value' => true,
+                            'label' => $this->l('Callback')
+                        ),
+                        array(
+                            'id' => 'return',
+                            'value' => '0', // False
+                            'label' => $this->l('Return')
+                        )
+                    )
+                ),
+                array(
+                    'type' => 'switch',
+                    'label' => $this->l('Billplz Notification'),
+                    'name' => 'BILLPLZ_BILLNOTIFY',
+                    'is_bool' => true,
+                    'values' => array(
+                        array(
+                            'id' => 'yes',
+                            'value' => true,
+                            'label' => $this->l('Notify')
+                        ),
+                        array(
+                            'id' => 'no',
+                            'value' => '0', // False
+                            'label' => $this->l('No Notification')
+                        )
+                    )
                 )
             ),
             'submit' => array(
@@ -144,112 +219,62 @@ class billplz extends PaymentModule {
         );
 
         // Load current value
-        $helper->fields_value['MCODE'] = Configuration::get('MCODE');
-        $helper->fields_value['MKEY'] = Configuration::get('MKEY');
-        $helper->fields_value['PURL'] = Configuration::get('PURL');
+        $helper->fields_value['BILLPLZ_APIKEY'] = Configuration::get('BILLPLZ_APIKEY');
+        $helper->fields_value['BILLPLZ_COLLECTIONID'] = Configuration::get('BILLPLZ_COLLECTIONID');
+        $helper->fields_value['BILLPLZ_MODE'] = Configuration::get('BILLPLZ_MODE');
+        $helper->fields_value['BILLPLZ_IPNMODE'] = Configuration::get('BILLPLZ_IPNMODE');
+        $helper->fields_value['BILLPLZ_BILLNOTIFY'] = Configuration::get('BILLPLZ_BILLNOTIFY');
 
         return $helper->generateForm($fields_form);
     }
 
     public function hookPayment($params) {
 
-        /* $this->smarty->assign(array(
-          'purl' 			=> Configuration::get('PURL'),
-          'mcode' 		=> Configuration::get('MCODE'),
-          'refNo' 		=> $this->context->cart->id,
-          'amount'		=> number_format($this->context->cart->getOrderTotal(true,Cart::BOTH), 2),
-          'currency'		=> $this->context->currency->iso_code,
-          'proddesc'      => $this->getProductDesc($params),
-          'customer'		=> $this->context->cookie->customer_firstname,
-          'email'			=> $this->context->cookie->email,
-          'tel'			=> $this->getPhoneNumber($this->context->customer->id),
-          'signature'		=> $this->billplz_signature(Configuration::get('MKEY') . Configuration::get('MCODE') . $this->context->cart->id . number_format(str_replace(".", "", $this->context->cart->getOrderTotal(true,Cart::BOTH)), 2, '', '') . $this->context->currency->iso_code ),
-          'logoURL' 		=> Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->name.'/logo.png',
-          'logoBillplz' 	=> Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->name.'/views/img/billplz.gif',
-          'responseURL' 	=> $this->context->link->getModuleLink('billplz', 'receive'),
-          'backendPostURL'=> $this->context->link->getModuleLink('billplz', 'backendposturl'),
-          'this_path' 	=> $this->_path,
-          'this_path_bw' 	=> $this->_path,
-          'this_path_ssl' => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->name.'/'
-          )); */
+        // Signature using MD5, combination of API Key, Collection ID and Small Leteter Customer First Name
 
-        //number intelligence
-        $custTel = $this->getPhoneNumber($this->context->customer->id);
-        $custTel2 = Tools::substr($custTel, 0, 1);
-        if ($custTel2 == '+') {
-            $custTel3 = Tools::substr($custTel, 1, 1);
-            if ($custTel3 != '6')
-                $custTel = "+6" . $custTel;
-        } else if ($custTel2 == '6') {
-            
-        } else {
-            if ($custTel != '')
-                $custTel = "+6" . $custTel;
-        }
-        //number intelligence
-        //Billplz CURL
-        $billplz_data = array(
-            'amount' => number_format($this->context->cart->getOrderTotal(true, Cart::BOTH), 2) * 100,
-            //'currency' => $this->context->currency->iso_code,
-            'name' => $this->context->cookie->customer_firstname . " " . $this->context->cookie->customer_lastname,
-            'email' => $this->context->cookie->email,
-            'collection_id' => Configuration::get('MKEY'),
-            'mobile' => $custTel,
-            'reference_1_label' => "ID",
-            'reference_1' => $this->context->cart->id,
-            'description' => $this->getProductDesc($params),
-            'redirect_url' => (isset($_SERVER['HTTPS']) ? ($_SERVER['HTTPS'] == "on" ? 'https://' : 'http://') : 'http://') . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . 'index.php?fc=module&module=billplz&controller=receive&scvalidate=' . $this->context->cart->id,
-            //'redirect_url' => $this->context->link->getModuleLink('billplz', 'receive') . '?&scvalidate='. $this->context->cart->id,
-            'callback_url' => (isset($_SERVER['HTTPS']) ? ($_SERVER['HTTPS'] == "on" ? 'https://' : 'http://') : 'http://') . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . 'index.php?fc=module&module=billplz&controller=backendposturl&recid=' . $this->context->cart->id,
-                //$this->context->link->getModuleLink('billplz', 'backendposturl') . '?&recid='.$this->context->cart->id
-        );
-        //Billplz CURL
-        $host = Configuration::get('PURL') == '1' ? 'https://www.billplz.com/api/v3/bills/' : 'https://billplz-staging.herokuapp.com/api/v3/bills/';
-        for ($i = 0; $i < 2; $i++) {
-            $process = curl_init($host);
-            curl_setopt($process, CURLOPT_HEADER, 0);
-            curl_setopt($process, CURLOPT_USERPWD, Configuration::get('MCODE') . ":");
-            curl_setopt($process, CURLOPT_TIMEOUT, 30);
-            curl_setopt($process, CURLOPT_RETURNTRANSFER, TRUE);
-            curl_setopt($process, CURLOPT_POSTFIELDS, http_build_query($billplz_data));
-            $return = curl_exec($process);
-            curl_close($process);
-            $arr = Tools::jsonDecode($return, true);
-            if (isset($arr['url'])) {
-                $url = $arr['url'];
-                break;
-            } else if ($i == 0) {
-                $url = "#";
-                unset($billplz_data['mobile']);
-            }
-        }
+        $signature = md5(Configuration::get('BILLPLZ_APIKEY') . Configuration::get('BILLPLZ_COLLECTIONID') . strtolower($this->context->cookie->customer_firstname));
 
-        //'action' utk jump url
-        //'logoBillplz' utk logo
-        //'logoURL' utk logo
         $this->smarty->assign(array(
-            'logoURL' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/views/img/logo.jpg',
+            'cartid' => $this->context->cart->id,
+            'amount' => number_format($this->context->cart->getOrderTotal(true, Cart::BOTH), 2),
+            'currency' => $this->context->currency->iso_code,
+            'proddesc' => $this->getProductDesc($params),
+            'name' => $this->context->cookie->customer_firstname,
+            'email' => $this->context->cookie->email,
+            'mobile' => $this->getPhoneNumber($this->context->customer->id),
+            'logoURL' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/images/logo.jpg',
             'logoBillplz' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/logo.png',
-            'action' => $url,
+            'processurl' => $this->context->link->getModuleLink('billplz', 'process'),
+            'redirecturl' => $this->context->link->getModuleLink('billplz', 'return') . '&signature=' . $signature,
+            'callbackurl' => $this->context->link->getModuleLink('billplz', 'callback') . '&signature=' . $signature,
+            'signature' => $signature,
             'this_path' => $this->_path,
             'this_path_bw' => $this->_path,
             'this_path_ssl' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/'
         ));
+        // payment.tpl should post the data to the Controller (processurl) and the controller send header (Billplz Payment Page) to the user.
         return $this->display(__FILE__, 'payment.tpl');
     }
 
     public function hookPaymentReturn($params) {
-        if (!$this->active)
-            return;
+        /*
+         *  WTF. What is this for?
+         */
 
-        $state = $params['objOrder']->getCurrentState();
-        if ($state == Configuration::get('PS_OS_BILLPLZ') || $state == Configuration::get('PS_OS_OUTOFSTOCK')) {
-            $this->context->smarty->assign(array(
-                'orderHistory' => $this->context->link->getPageLink('history'),
-            ));
-        } else
-            $this->smarty->assign('error', 'Sorry, we have failed to process your order. Please try again.');
-        return $this->display(__FILE__, 'payment_return.tpl');
+        /*
+          if (!$this->active)
+          return;
+
+          $state = $params['objOrder']->getCurrentState();
+          if ($state == Configuration::get('PS_OS_BILLPLZ') || $state == Configuration::get('PS_OS_OUTOFSTOCK')) {
+          $this->context->smarty->assign(array(
+          'orderHistory' => $this->context->link->getPageLink('history'),
+          ));
+          } else
+          $this->smarty->assign('error', 'Sorry, we have failed to process your order. Please try again.');
+          return $this->display(__FILE__, 'payment_return.tpl');
+         * 
+         */
     }
 
     public function getPhoneNumber($id_customer) {
@@ -289,7 +314,7 @@ class billplz extends PaymentModule {
         return false;
     }
 
-    private function _create_order_state($label, $template = null, $color = 'DarkOrange') {
+    private function _create_order_state($label, $template = null, $color = 'Blue') {
         //Create the new status
         $os = new OrderState();
         $os->name = array(
