@@ -1,5 +1,5 @@
-# Billplz for Prestashop 1.6
-Accept payment using Billplz for Prestashop 1.6
+# Billplz for PrestaShop 1.6
+Accept payment using Billplz for PrestaShop 1.6
 
 # Billplz for Prestashop 1.7 is under development! #
 
