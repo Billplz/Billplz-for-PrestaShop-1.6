@@ -91,10 +91,10 @@ class BillplzReturnModuleFrontController extends ModuleFrontController {
             $amount = (float) number_format(($data['amount'] / 100), 2);
 
             // Test if total is equal to amount. 
-            if ($total != $amount) {
-                error_log($this->module->l('Cart data and amount paid is mismatch.', 'validation'));
-                die();
-            }
+            //if ($total != $amount) {
+            //    error_log($this->module->l('Cart data and amount paid is mismatch.', 'validation'));
+            //    die();
+            //}
 
             // Dapatkan currency ID berdasarkan ISO Code
             $currencyid = Currency::getIdByIsoCode($data['reference_2']);
