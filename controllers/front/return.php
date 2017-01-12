@@ -140,9 +140,9 @@ class BillplzReturnModuleFrontController extends ModuleFrontController {
                 'order_id' => pSQL((int) $cart->id), // PrestaShop standard is id_order
                 'billplz_bills_id' => pSQL($data['id']),
             ));
-        } else {
+        } elseif (!empty($sql_result) && !Configuration::get('BILLPLZ_IPNMODE')) {
             // Comment the below line if you want
-            error_log('Possible of multiple callback request are ignored.');
+            error_log('Possible of multiple return request are ignored.');
         }
     }
 

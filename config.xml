@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <module>
 	<name>billplz</name>
-	<displayName><![CDATA[Billplz]]></displayName>
+	<displayName><![CDATA[Billplz Payment Gateway]]></displayName>
 	<version><![CDATA[1.0]]></version>
 	<description><![CDATA[Billplz configuration module]]></description>
 	<author><![CDATA[Wan Zulkarnain]]></author>
