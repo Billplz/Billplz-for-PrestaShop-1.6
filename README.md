@@ -1,7 +1,9 @@
 # Billplz for PrestaShop 1.6
 Accept payment using Billplz for PrestaShop 1.6
 
-# Billplz for Prestashop 1.7 is under development! #
+# Looking for Billplz for Prestashop 1.7?
+
+Go to: https://github.com/wzul/Billplz-for-PrestaShop-1.7
 
 # Installation
 1. Download Module: https://codeload.github.com/wzul/Billplz-for-PrestaShop-1.6/zip/master
