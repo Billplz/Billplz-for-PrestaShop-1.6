@@ -142,7 +142,7 @@ class BillplzReturnModuleFrontController extends ModuleFrontController {
             ));
         } else {
             // Comment the below line if you want
-            error_log('Possible of multiple callback request are ignored.');
+            error_log('Possible of multiple return request are ignored.');
         }
     }
 
