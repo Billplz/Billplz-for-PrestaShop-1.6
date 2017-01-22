@@ -57,7 +57,7 @@ class BillplzCallbackModuleFrontController extends ModuleFrontController {
 
         // Retrieve Billplz Mode
         $mode = Configuration::get('BILLPLZ_MODE') ? 'Production' : 'Staging';
-        
+
         // Retrive API Key & Collection ID
         $api_key = Configuration::get('BILLPLZ_APIKEY');
         $collection_id = Configuration::get('BILLPLZ_COLLECTIONID');
@@ -70,9 +70,10 @@ class BillplzCallbackModuleFrontController extends ModuleFrontController {
 
         if ($data['paid']) {
 
+            $amount = number_format(($data['amount'] / 100), 2);
             // Check for possible fake form request. If fake, stop
             $signature = isset($_GET['signature']) ? $_GET['signature'] : 'No Valid Signature';
-            $this->checkDataIntegrity($signature, $api_key, $collection_id, $data['name']);
+            $this->checkDataIntegrity($signature, $api_key, $collection_id, $data['name'], $amount);
 
             // Tak boleh guna $this->context sebab ini server side
             $cart = new Cart($data['reference_1']);
@@ -150,9 +151,9 @@ class BillplzCallbackModuleFrontController extends ModuleFrontController {
      * Signature using MD5, combination of API Key and Customer Email
      */
 
-    private function checkDataIntegrity($signature, $api_key, $collection_id, $name) {
+    private function checkDataIntegrity($signature, $api_key, $collection_id, $name, $amount) {
 
-        $new_signature = md5($api_key . $collection_id . strtolower($name));
+        $new_signature = md5($api_key . $collection_id . strtolower($name) . $amount);
 
         if ($signature != $new_signature)
             die('Invalid Request. Reason: Invalid Signature');
