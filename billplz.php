@@ -231,8 +231,8 @@ class Billplz extends PaymentModule {
     public function hookPayment($params) {
 
         // Signature using MD5, combination of API Key, Collection ID and Small Leteter Customer First Name
-
-        $signature = md5(Configuration::get('BILLPLZ_APIKEY') . Configuration::get('BILLPLZ_COLLECTIONID') . strtolower($this->context->cookie->customer_firstname));
+        // Include amount to MD5 too to avoid amount spoofing
+        $signature = md5(Configuration::get('BILLPLZ_APIKEY') . Configuration::get('BILLPLZ_COLLECTIONID') . strtolower($this->context->cookie->customer_firstname) . number_format($this->context->cart->getOrderTotal(true, Cart::BOTH), 2));
 
         $this->smarty->assign(array(
             'cartid' => $this->context->cart->id,
