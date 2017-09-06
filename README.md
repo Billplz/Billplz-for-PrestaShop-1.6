@@ -6,26 +6,24 @@ Accept payment using Billplz for PrestaShop 1.6
 Go to: https://github.com/wzul/Billplz-for-PrestaShop-1.7
 
 # Installation
-1. Download Module: https://codeload.github.com/wzul/Billplz-for-PrestaShop-1.6/zip/master
-2. Rename the file from "Billplz-for-Prestashop-master.zip" to "billplz.zip"
-3. Open the archive and rename the folder from Billplz-for-Prestashop-master to billplz
-4. Upload and Install to Prestashop
-5. Insert your API Key & Collection ID
-6. Hola, You are done!
+1. **Download** Module: https://codeload.github.com/wzul/Billplz-for-PrestaShop-1.6/zip/master
+2. **Rename** the file from "**Billplz-for-Prestashop-master.zip**" to "**billplz.zip**"
+3. **Open** the **archive and rename** the folder from **Billplz-for-Prestashop-master** to **billplz**
+4. Upload and **Install to Prestashop**
+5. Insert your **API Key & X Signature Key**
+6. Hola, You are **done!**
 
-# Compatibility
-1. Compatible with PHP 7 (tested)
-2. Not compatible with Prestashop 1.7
+# System Requirements
+1. PHP 5.6, **7.0 (Recommended)**
+2. Prestashop 1.6.x
+3. Not compatible with Prestashop 1.7 and later
 
-# Issues
-Please open through Issues tab
+# Troubleshooting
 
-# Contact us
-Facebook: http://www.facebook.com/billplzplugin
-Email: wan@wanzul-hosting.com
+* Please make sure you have enabled X Signature Key properly on your [Billplz Account Settings](https://www.billplz.com/enterprise/setting)
 
-# Donate
-www.wanzul.net/donate
+# Other
+Email: wan@billplz.com
 
 # Reference
 - https://github.com/ruslyrossi47/iPay88-Prestashop/

@@ -19,9 +19,7 @@
 	<input type="hidden" name="mobile" value="{$mobile}" />
 	<input type="hidden" name="lang" value="UTF-8"/>
         <input type="hidden" name="currency" value="{$currency}" />
-        <input type="hidden" name="signature" value="{$signature}" />
-	<input type="hidden" name="redirecturl" value="{$redirecturl}" />
-	<input type="hidden" name="callbackurl" value="{$callbackurl}" />
+        <input type="hidden" name="hash" value="{$hash}" />
 </form>
 <script type="text/javascript">
 	{literal}

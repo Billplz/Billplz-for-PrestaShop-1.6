@@ -1,46 +1,29 @@
 <?php
-
-/*
- * 2007-2015 PrestaShop
- *
- * NOTICE OF LICENSE
- *
- * This source file is subject to the Academic Free License (AFL 3.0)
- * that is bundled with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://opensource.org/licenses/afl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@prestashop.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
- * versions in the future. If you wish to customize PrestaShop for your
- * needs please refer to http://www.prestashop.com for more information.
- *
- * @copyright  2007-2013 PrestaShop SA
- * @license    http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
- * International Registered Trademark & Property of PrestaShop SA
- *
- * Author : wan@wanzul-hosting.com
- */
-
 if (!defined('_PS_VERSION_'))
     exit;
 
-class Billplz extends PaymentModule {
+class Billplz extends PaymentModule
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->name = 'billplz';
         $this->tab = 'payments_gateways';
-        $this->version = '3.0';
+        $this->version = '3.0.1';
         $this->author = 'Wan Zulkarnain';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.5', 'max' => '1.6');
 
         $this->currencies = true;
         $this->currencies_mode = 'checkbox';
+
+        $config = Configuration::getMultiple(array('BILLPLZ_APIKEY', 'BILLPLZ_X_SIGNATURE_KEY', 'BILLPLZ_COLLECTIONID'));
+        if (isset($config['BILLPLZ_APIKEY']))
+            $this->api_key = $config['BILLPLZ_APIKEY'];
+        if (isset($config['BILLPLZ_X_SIGNATURE_KEY']))
+            $this->x_signature = $config['BILLPLZ_X_SIGNATURE_KEY'];
+        if (isset($config['BILLPLZ_COLLECTIONID']))
+            $this->collection_id = $config['BILLPLZ_COLLECTIONID'];
 
         parent::__construct();
 
@@ -51,9 +34,14 @@ class Billplz extends PaymentModule {
 
         if (!Configuration::get('Billplz'))
             $this->warning = $this->l('No name provided');
+        if (!isset($this->api_key))
+            $this->warning = $this->l('You need to set Billplz API Secret Key!');
+        if (!isset($this->x_signature))
+            $this->warning = $this->l('You need to set Billplz X Signature Key!');
     }
 
-    public function install() {
+    public function install()
+    {
 
         // Create tables to store status data to prevent multiple callback
         Db::getInstance()->execute('
@@ -66,27 +54,40 @@ class Billplz extends PaymentModule {
 				');
 
         // Pre-set the default values
-        Configuration::updateValue('BILLPLZ_MODE', true);
-        Configuration::updateValue('BILLPLZ_IPNMODE', true);
         Configuration::updateValue('BILLPLZ_BILLNOTIFY', false);
 
         return parent::install() &&
-                Configuration::updateValue('Billplz', 'Billplz MODULE') &&
-                $this->registerHook('payment') &&
-                Configuration::updateValue('PS_OS_BILLPLZ', $this->_create_order_state('Billplz Payment', null, 'blue'));
+            Configuration::updateValue('Billplz', 'Billplz MODULE') &&
+            $this->registerHook('payment') &&
+            Configuration::updateValue('PS_OS_BILLPLZ', $this->_create_order_state('Billplz Payment', null, 'blue'));
     }
 
-    public function uninstall() {
+    public function uninstall()
+    {
         Db::getInstance()->execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'billplz_orders`;');
         return parent::uninstall() &&
-                Configuration::deleteByName('BILLPLZ_APIKEY') &&
-                Configuration::deleteByName('BILLPLZ_COLLECTIONID') &&
-                Configuration::deleteByName('BILLPLZ_MODE') &&
-                Configuration::deleteByName('BILLPLZ_IPNMODE') &&
-                Configuration::deleteByName('BILLPLZ_BILLNOTIFY');
+            Configuration::deleteByName('BILLPLZ_APIKEY') &&
+            Configuration::deleteByName('BILLPLZ_COLLECTIONID') &&
+            Configuration::deleteByName('BILLPLZ_X_SIGNATURE_KEY') &&
+            Configuration::deleteByName('BILLPLZ_BILLNOTIFY');
     }
 
-    public function getContent() {
+    /**
+     * Validate the form submitted in configuration setting
+     * 
+     */
+    protected function _postValidation()
+    {
+        if (Tools::isSubmit('btnSubmit')) {
+            if (!Tools::getValue('BILLPLZ_APIKEY'))
+                $this->_postErrors[] = $this->l('API Key is required');
+            if (!Tools::getValue('BILLPLZ_X_SIGNATURE_KEY'))
+                $this->_postErrors[] = $this->l('X Signature Key is required.');
+        }
+    }
+
+    public function getContent()
+    {
         $output = null;
 
         if (Tools::isSubmit('submit' . $this->name)) {
@@ -95,15 +96,15 @@ class Billplz extends PaymentModule {
 
             Configuration::updateValue('BILLPLZ_APIKEY', Tools::getValue('BILLPLZ_APIKEY'));
             Configuration::updateValue('BILLPLZ_COLLECTIONID', Tools::getValue('BILLPLZ_COLLECTIONID'));
-            Configuration::updateValue('BILLPLZ_MODE', Tools::getValue('BILLPLZ_MODE'));
-            Configuration::updateValue('BILLPLZ_IPNMODE', Tools::getValue('BILLPLZ_IPNMODE'));
+            Configuration::updateValue('BILLPLZ_X_SIGNATURE_KEY', Tools::getValue('BILLPLZ_X_SIGNATURE_KEY'));
             Configuration::updateValue('BILLPLZ_BILLNOTIFY', Tools::getValue('BILLPLZ_BILLNOTIFY'));
             $output .= $this->displayConfirmation($this->l('Settings updated'));
         }
         return $output . $this->displayForm();
     }
 
-    public function displayForm() {
+    public function displayForm()
+    {
         // Get default Language
         $default_lang = (int) Configuration::get('PS_LANG_DEFAULT');
 
@@ -125,62 +126,44 @@ class Billplz extends PaymentModule {
                     'label' => $this->l('Collection ID'),
                     'name' => 'BILLPLZ_COLLECTIONID',
                     'size' => 20,
+                    'required' => false
+                ),
+                array(
+                    'type' => 'text',
+                    'label' => $this->l('X Signature Key'),
+                    'name' => 'BILLPLZ_X_SIGNATURE_KEY',
+                    'size' => 20,
                     'required' => true
                 ),
                 array(
-                    'type' => 'switch',
-                    'label' => $this->l('Production Mode'),
-                    'name' => 'BILLPLZ_MODE',
-                    'is_bool' => true,
-                    'values' => array(
-                        array(
-                            'id' => 'Production',
-                            'value' => true,
-                            'label' => $this->l('Production')
-                        ),
-                        array(
-                            'id' => 'Staging',
-                            'value' => '0', // False
-                            'label' => $this->l('Staging')
-                        )
-                    )
-                ),
-                array(
-                    'type' => 'switch',
-                    'label' => $this->l('IPN Type (Yes: Callback, No: Return)'),
-                    'name' => 'BILLPLZ_IPNMODE',
-                    'is_bool' => true,
-                    'values' => array(
-                        array(
-                            'id' => 'callback',
-                            'value' => true,
-                            'label' => $this->l('Callback')
-                        ),
-                        array(
-                            'id' => 'return',
-                            'value' => '0', // False
-                            'label' => $this->l('Return')
-                        )
-                    )
-                ),
-                array(
-                    'type' => 'switch',
-                    'label' => $this->l('Billplz Notification'),
+                    'type' => 'select',
+                    'label' => $this->l('Delivery Notification'),
                     'name' => 'BILLPLZ_BILLNOTIFY',
-                    'is_bool' => true,
-                    'values' => array(
-                        array(
-                            'id' => 'yes',
-                            'value' => true,
-                            'label' => $this->l('Notify')
+                    'col' => '4',
+                    'default_value' => '0',
+                    'options' => array(
+                        'query' => array(
+                            array(
+                                'id' => 0,
+                                'name' => $this->l('No Notification')
+                            ),
+                            array(
+                                'id' => 1,
+                                'name' => $this->l('Email Notification')
+                            ),
+                            array(
+                                'id' => 2,
+                                'name' => $this->l('SMS Notification')
+                            ),
+                            array(
+                                'id' => 3,
+                                'name' => $this->l('Both Notification')
+                            )
                         ),
-                        array(
-                            'id' => 'no',
-                            'value' => '0', // False
-                            'label' => $this->l('No Notification')
-                        )
+                        'id' => 'id',
+                        'name' => 'name'
                     )
-                )
+                ),
             ),
             'submit' => array(
                 'title' => $this->l('Save'),
@@ -221,89 +204,60 @@ class Billplz extends PaymentModule {
         // Load current value
         $helper->fields_value['BILLPLZ_APIKEY'] = Configuration::get('BILLPLZ_APIKEY');
         $helper->fields_value['BILLPLZ_COLLECTIONID'] = Configuration::get('BILLPLZ_COLLECTIONID');
-        $helper->fields_value['BILLPLZ_MODE'] = Configuration::get('BILLPLZ_MODE');
-        $helper->fields_value['BILLPLZ_IPNMODE'] = Configuration::get('BILLPLZ_IPNMODE');
+        $helper->fields_value['BILLPLZ_X_SIGNATURE_KEY'] = Configuration::get('BILLPLZ_X_SIGNATURE_KEY');
         $helper->fields_value['BILLPLZ_BILLNOTIFY'] = Configuration::get('BILLPLZ_BILLNOTIFY');
 
         return $helper->generateForm($fields_form);
     }
 
-    public function hookPayment($params) {
+    public function hookPayment($params)
+    {
 
-        // Signature using MD5, combination of API Key, Collection ID and Small Leteter Customer First Name
-        // Include amount to MD5 too to avoid amount spoofing
-        $signature = md5(Configuration::get('BILLPLZ_APIKEY') . Configuration::get('BILLPLZ_COLLECTIONID') . strtolower($this->context->cookie->customer_firstname) . number_format($this->context->cart->getOrderTotal(true, Cart::BOTH), 2));
+        $cart = $this->context->cart;
+        $cart_id = $cart->id;
+        $customer = new Customer((int) $cart->id_customer);
+        $address = new Address(intval($cart->id_address_invoice));
+
+        $amount = number_format($cart->getOrderTotal(true, Cart::BOTH), 2);
+        $x_signature = Configuration::get('BILLPLZ_X_SIGNATURE_KEY');
+
+        $raw_string = $cart_id . $amount;
+        $filtered_string = preg_replace("/[^a-zA-Z0-9]+/", "", $raw_string);
+        $hash = hash_hmac('sha256', $filtered_string, $x_signature);
 
         $this->smarty->assign(array(
-            'cartid' => $this->context->cart->id,
-            'amount' => number_format($this->context->cart->getOrderTotal(true, Cart::BOTH), 2),
+            'cartid' => $cart_id,
+            'amount' => $amount,
             'currency' => $this->context->currency->iso_code,
             'proddesc' => $this->getProductDesc($params),
-            'name' => $this->context->cookie->customer_firstname,
-            'email' => $this->context->cookie->email,
-            'mobile' => $this->getPhoneNumber($this->context->customer->id),
+            'name' => $customer->firstname . " " . $customer->lastname,
+            'email' => $customer->email,
+            'mobile' => ( empty($address->phone) ? $address->phone_mobile : $address->phone ),
             'logoURL' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/images/logo.jpg',
             'logoBillplz' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/logo.png',
             'processurl' => $this->context->link->getModuleLink($this->name, 'process', array(), true),
-            'redirecturl' => isset($_SERVER['HTTPS']) ? ($_SERVER['HTTPS'] == "on" ? 'https://' : 'http://') : 'http://' . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . 'index.php?fc=module&module=billplz&controller=return&signature=' . $signature,
-            'callbackurl' => isset($_SERVER['HTTPS']) ? ($_SERVER['HTTPS'] == "on" ? 'https://' : 'http://') : 'http://' . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . 'index.php?fc=module&module=billplz&controller=callback&signature=' . $signature,
-            'signature' => $signature,
-            'this_path' => $this->_path,
-            'this_path_bw' => $this->_path,
-            'this_path_ssl' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/'
+            'hash' => $hash,
+            //'this_path' => $this->_path,
+            //'this_path_ssl' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/'
         ));
         // payment.tpl should post the data to the Controller (processurl) and the controller send header (Billplz Payment Page) to the user.
         return $this->display(__FILE__, 'payment.tpl');
     }
 
-    public function hookPaymentReturn($params) {
-        /*
-         *  WTF. What is this for?
-         */
-
-        /*
-          if (!$this->active)
-          return;
-
-          $state = $params['objOrder']->getCurrentState();
-          if ($state == Configuration::get('PS_OS_BILLPLZ') || $state == Configuration::get('PS_OS_OUTOFSTOCK')) {
-          $this->context->smarty->assign(array(
-          'orderHistory' => $this->context->link->getPageLink('history'),
-          ));
-          } else
-          $this->smarty->assign('error', 'Sorry, we have failed to process your order. Please try again.');
-          return $this->display(__FILE__, 'payment_return.tpl');
-         * 
-         */
+    public function hookPaymentReturn($params)
+    {
+        
     }
 
-    public function getPhoneNumber($id_customer) {
-        $sql = '
-			SELECT a.phone
-			FROM ' . _DB_PREFIX_ . 'address AS a
-			WHERE id_customer = ' . $id_customer . '
-			AND a.phone <> ""
-			GROUP BY a.id_customer
-			ORDER BY a.id_address
-		';
-
-        $results = Db::getInstance()->executeS($sql);
-
-        $tel = 0;
-        foreach ($results as $result) :
-            $tel = $result['phone'];
-        endforeach;
-
-        return $tel;
-    }
-
-    public function getProductDesc($params) {
+    public function getProductDesc($params)
+    {
         $products = $params['cart']->getProducts(true);
 
         return $products[0]['name'];
     }
 
-    public function checkCurrency($cart) {
+    public function checkCurrency($cart)
+    {
         $currency_order = new Currency($cart->id_currency);
         $currencies_module = $this->getCurrency($cart->id_currency);
 
@@ -314,7 +268,8 @@ class Billplz extends PaymentModule {
         return false;
     }
 
-    private function _create_order_state($label, $template = null, $color = 'Blue') {
+    private function _create_order_state($label, $template = null, $color = 'Blue')
+    {
         //Create the new status
         $os = new OrderState();
         $os->name = array(
@@ -333,5 +288,4 @@ class Billplz extends PaymentModule {
 
         return $os->id;
     }
-
 }

@@ -1,111 +1,75 @@
 <?php
+require_once __DIR__ . '/billplz-api.php';
 
-/*
- * 2007-2015 PrestaShop
- *
- * NOTICE OF LICENSE
- *
- * This source file is subject to the Academic Free License (AFL 3.0)
- * that is bundled with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://opensource.org/licenses/afl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@prestashop.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
- * versions in the future. If you wish to customize PrestaShop for your
- * needs please refer to http://www.prestashop.com for more information.
- *
- *  @author PrestaShop SA <contact@prestashop.com>
- *  @copyright  2007-2013 PrestaShop SA
- *  @license    http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
- *  International Registered Trademark & Property of PrestaShop SA
- */
-
-/**
- * 
- * To prevent bills automatically created without user confirmation.
- * 
- * @since 3.0.1
- */
-class BillplzProcessModuleFrontController extends ModuleFrontController {
+class BillplzProcessModuleFrontController extends ModuleFrontController
+{
 
     public $php_self = 'process';
 
-    public function initContent() {
+    public function initContent()
+    {
         $this->display_column_left = false;
 
         // Get Configuration Data
 
-        $api_key = Configuration::get('BILLPLZ_APIKEY');
-        $collection_id = Configuration::get('BILLPLZ_COLLECTIONID');
-        $deliver = Configuration::get('BILLPLZ_BILLNOTIFY');
-        $mode = Configuration::get('BILLPLZ_MODE') ? 'Production' : 'Staging';
-
-        // If data not available, put dummy data
+        $config = Configuration::getMultiple(array('BILLPLZ_APIKEY', 'BILLPLZ_X_SIGNATURE_KEY', 'BILLPLZ_COLLECTIONID'));
+        if (isset($config['BILLPLZ_APIKEY']))
+            $api_key = $config['BILLPLZ_APIKEY'];
+        if (isset($config['BILLPLZ_COLLECTIONID']))
+            $collection_id = $config['BILLPLZ_COLLECTIONID'];
 
         $amount = isset($_POST['amount']) ? $_POST['amount'] : 300;
-        $description = isset($_POST['proddesc']) ? $_POST['proddesc'] : 'Test Payment';
-        $email = isset($_POST['email']) ? $_POST['email'] : 'wan@wanzul-hosting.com';
-        $mobile = isset($_POST['mobile']) ? $_POST['mobile'] : '60145356443';
-        $name = isset($_POST['name']) ? $_POST['name'] : 'Ahmad';
-        $signature = isset($_POST['signature']) ? $_POST['signature'] : 'No Valid Signature';
-        $redirect_url = isset($_POST['redirecturl']) ? $_POST['redirecturl'] : 'http://fb.com/billplzplugin';
-        $callback_url = isset($_POST['callbackurl']) ? $_POST['callbackurl'] : 'http://google.com';
+        $description = isset($_POST['proddesc']) ? $_POST['proddesc'] : exit('No Valid Description');
+        $email = isset($_POST['email']) ? $_POST['email'] : exit('No Valid Email');
+        $mobile = isset($_POST['mobile']) ? $_POST['mobile'] : exit('No Valid Mobile Number');
+        $name = isset($_POST['name']) ? $_POST['name'] : exit('No Valid Name');
+        $hash = isset($_POST['hash']) ? $_POST['hash'] : exit('No Valid Hash');
+        $redirect_url = isset($_SERVER['HTTPS']) ? ($_SERVER['HTTPS'] == "on" ? 'https://' : 'http://') : 'http://' . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . 'index.php?fc=module&module=billplz&controller=return';
+        $callback_url = isset($_SERVER['HTTPS']) ? ($_SERVER['HTTPS'] == "on" ? 'https://' : 'http://') : 'http://' . $_SERVER['HTTP_HOST'] . __PS_BASE_URI__ . 'index.php?fc=module&module=billplz&controller=callback';
+
         $reference_1 = isset($_POST['cartid']) ? $_POST['cartid'] : '5';
-        $reference_2_label = "Currency";
         $reference_2 = isset($_POST['currency']) ? $_POST['currency'] : 'MYR';
 
 
         // Check for possible fake form request. If fake, stop
 
-        $this->checkDataIntegrity($signature, $api_key, $collection_id, $name, $amount);
+        $this->checkDataIntegrity($hash, $reference_1, $amount);
 
-        // Buat verification sikit kat sini
-
-        require_once 'billplzapi.php';
-        $billplz = new billplzapi;
-        $billplz->setAmount($amount)
-                ->setCollection($collection_id)
-                ->setDeliver($deliver)
-                ->setDescription($description)
-                ->setEmail($email)
-                ->setMobile($mobile)
-                ->setName($name)
-                ->setPassbackURL($redirect_url, $callback_url)
-                ->setReference_1($reference_1)
-                ->setReference_1_Label("ID")
-                ->setReference_2_Label("ISO")
-                ->setReference_2($reference_2)
-                ->create_bill($api_key, $mode);
+        $billplz = new Billplz_API(trim($api_key));
+        $billplz
+            ->setCollection($collection_id)
+            ->setName($name)
+            ->setAmount($amount)
+            ->setDeliver($deliver)
+            ->setMobile($mobile)
+            ->setEmail($email)
+            ->setDescription($description)
+            ->setReference_1($reference_1)
+            ->setReference_1_Label('Cart ID')
+            ->setReference_2($reference_2)
+            ->setPassbackURL($callback_url, $redirect_url)
+            ->create_bill(true);
 
 
         $url = $billplz->getURL();
 
         if (empty($url)) {
-            error_log(var_export($billplz, true));
-            Tools::redirect('http://fb.com/billplzplugin');
+            exit('Something went wrong! ' . $billplz->getErrorMessage());
         } else {
             Tools::redirect($url);
         }
     }
-
     /*
      * Signature using MD5, combination of API Key, Customer Email and Amount
      */
 
-    private function checkDataIntegrity($signature, $api_key, $collection_id, $name, $amount) {
-
-        $new_signature = md5($api_key . $collection_id . strtolower($name) . $amount);
-
-        if ($signature != $new_signature)
-            die('Invalid Request. Reason: Invalid Signature');
-        else {
-            // Sambung execution seperti biasa
-        }
+    private function checkDataIntegrity($old_hash, $cart_id, $amount)
+    {
+        $x_signature = Configuration::get('BILLPLZ_X_SIGNATURE_KEY');
+        $raw_string = $cart_id . $amount;
+        $filtered_string = preg_replace("/[^a-zA-Z0-9]+/", "", $raw_string);
+        $hash = hash_hmac('sha256', $filtered_string, $x_signature);
+        if ($hash != $old_hash)
+            die('Invalid Request. Reason: Input has been tempered');
     }
-
 }
