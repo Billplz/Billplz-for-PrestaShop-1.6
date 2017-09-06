@@ -12,11 +12,13 @@ class BillplzProcessModuleFrontController extends ModuleFrontController
 
         // Get Configuration Data
 
-        $config = Configuration::getMultiple(array('BILLPLZ_APIKEY', 'BILLPLZ_X_SIGNATURE_KEY', 'BILLPLZ_COLLECTIONID'));
+        $config = Configuration::getMultiple(array('BILLPLZ_APIKEY', 'BILLPLZ_COLLECTIONID', 'BILLPLZ_BILLNOTIFY'));
         if (isset($config['BILLPLZ_APIKEY']))
             $api_key = $config['BILLPLZ_APIKEY'];
         if (isset($config['BILLPLZ_COLLECTIONID']))
             $collection_id = $config['BILLPLZ_COLLECTIONID'];
+        if (isset($config['BILLPLZ_BILLNOTIFY']))
+            $deliver = $config['BILLPLZ_BILLNOTIFY'];
 
         $amount = isset($_POST['amount']) ? $_POST['amount'] : 300;
         $description = isset($_POST['proddesc']) ? $_POST['proddesc'] : exit('No Valid Description');
