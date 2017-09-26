@@ -279,7 +279,7 @@ class Billplz extends PaymentModule
         );
 
         $os->invoice = true;
-        $os->unremovable = true;
+        $os->unremovable = false;
         $os->color = $color;
         $os->template = $template;
         $os->send_email = false;
