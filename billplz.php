@@ -9,10 +9,10 @@ class Billplz extends PaymentModule
     {
         $this->name = 'billplz';
         $this->tab = 'payments_gateways';
-        $this->version = '3.0.3';
-        $this->author = 'Wan Zulkarnain';
-        $this->need_instance = 0;
-        $this->ps_versions_compliancy = array('min' => '1.5', 'max' => '1.6');
+        $this->version = '3.0.4';
+        $this->author = 'Wan @ Billplz';
+        $this->need_instance = 1;
+        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.6.99.99');
 
         $this->currencies = true;
         $this->currencies_mode = 'checkbox';
@@ -31,6 +31,9 @@ class Billplz extends PaymentModule
         $this->description = $this->l('Fair Payment Software. Accept FPX payment.');
 
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall?');
+        
+        if (!count(Currency::checkPaymentCurrencies($this->id)))
+			$this->warning = $this->l('No currency has been set for this module.');
 
         if (!Configuration::get('Billplz'))
             $this->warning = $this->l('No name provided');
@@ -58,8 +61,7 @@ class Billplz extends PaymentModule
 
         return parent::install() &&
             Configuration::updateValue('Billplz', 'Billplz MODULE') &&
-            $this->registerHook('payment') &&
-            Configuration::updateValue('PS_OS_BILLPLZ', $this->_create_order_state('Billplz Payment', null, 'blue'));
+            $this->registerHook('payment');
     }
 
     public function uninstall()
@@ -215,6 +217,10 @@ class Billplz extends PaymentModule
 
         $cart = $this->context->cart;
         $cart_id = $cart->id;
+        
+        if (!$this->checkCurrency($params['cart']))
+			return;
+        
         $customer = new Customer((int) $cart->id_customer);
         $address = new Address(intval($cart->id_address_invoice));
 
@@ -266,26 +272,5 @@ class Billplz extends PaymentModule
                 if ($currency_order->id == $currency_module['id_currency'])
                     return true;
         return false;
-    }
-
-    private function _create_order_state($label, $template = null, $color = 'Blue')
-    {
-        //Create the new status
-        $os = new OrderState();
-        $os->name = array(
-            '1' => $label,
-            '2' => '',
-            '3' => ''
-        );
-
-        $os->invoice = true;
-        $os->unremovable = false;
-        $os->color = $color;
-        $os->template = $template;
-        $os->send_email = false;
-
-        $os->save();
-
-        return $os->id;
     }
 }
