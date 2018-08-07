@@ -6,7 +6,7 @@ class BillplzReturnModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
-        sleep(100);
+        sleep(2);
         $this->display_column_left = false;
         parent::initContent();
 
