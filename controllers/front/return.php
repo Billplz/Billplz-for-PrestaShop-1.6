@@ -49,7 +49,7 @@ class BillplzReturnModuleFrontController extends ModuleFrontController
             $sql_result = Db::getInstance()->getRow($sql_query);
 
             // Save to Database
-            $this->saveToDB($sql_result, $cart, $moreData);
+            //$this->saveToDB($sql_result, $cart, $moreData);
             //$customer = new Customer($cart->id_customer);
             //Tools::redirect('index.php?controller=order-confirmation&status=paid&id_cart=' . $cart->id . '&id_module=' . $this->module->id . '&id_order=' . $this->module->currentOrder . '&key=' . $customer->secure_key);
             Tools::redirect('index.php?controller=history');
