@@ -26,7 +26,7 @@
 
 class BillplzReturnModuleFrontController extends ModuleFrontController
 {
-    public $php_self = 'return';
+    //public $php_self = 'return';
 
     public function postProcess()
     {
