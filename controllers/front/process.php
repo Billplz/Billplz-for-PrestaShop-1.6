@@ -100,8 +100,5 @@ class BillplzProcessModuleFrontController extends ModuleFrontController
         );
 
         Tools::redirect($rbody['url']);
-
-
-        $redirect_url = $this->context->link->getModuleLink('billplz', 'return', array(), true);
     }
 }
