@@ -88,7 +88,27 @@ class BillplzProcessModuleFrontController extends ModuleFrontController
         list($rheader, $rbody) = $billplz->toArray($billplz->createBill($parameter, $optional, '0'));
 
         if ($rheader !== 200) {
-            Tools::redirect('index.php?controller=order&step=1');
+            if (isset($rbody['error'])) {
+                if (is_array($rbody['error']['message'])) {
+                    $error_messages = [];
+
+                    foreach ($rbody['error']['message'] as $error_message) {
+                        $error_messages[] = $error_message;
+                    }
+
+                    $error_messages = implode(' | ', $error_messages);
+                } else {
+                    $error_messages = $rbody['error']['message'];
+                }
+
+                $formatted_error_message = '[' . $rbody['error']['type'] . '] ' . $error_messages;
+
+                PrestaShopLogger::addLog('BillplzValidationModuleFrontController::postProcess - Unable to create a bill: ' . $formatted_error_message, 4, (int) $rheader, 'Order', (int) $order_id, true);
+            } else {
+                PrestaShopLogger::addLog('BillplzValidationModuleFrontController::postProcess - Unable to create a bill', 4, (int) $rheader, 'Order', (int) $order_id, true);
+            }
+
+            die(Tools::displayError($this->module->l('Payment error! Please contact admin for further assistance.', 'validation')));
         }
 
         Db::getInstance()->insert(
@@ -100,8 +120,5 @@ class BillplzProcessModuleFrontController extends ModuleFrontController
         );
 
         Tools::redirect($rbody['url']);
-
-
-        $redirect_url = $this->context->link->getModuleLink('billplz', 'return', array(), true);
     }
 }
